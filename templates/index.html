@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Météo France</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .weather-container {
+            background: white;
+            padding: 50px 60px;
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .weather-icon-header {
+            font-size: 50px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #667eea;
+            margin: 0;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: stretch;
+            flex-wrap: nowrap;
+        }
+
+        input {
+            flex: 1;
+            min-width: 0;
+            padding: 18px 25px;
+            font-size: 1.1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            outline: none;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+            -webkit-appearance: none;
+        }
+
+        input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 18px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-family: 'Poppins', sans-serif;
+            white-space: nowrap;
+            flex-shrink: 0;
+            -webkit-appearance: none;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .search-icon {
+            font-size: 1.3rem;
+        }
+
+        #result {
+            margin-top: 30px;
+            min-height: 50px;
+        }
+
+        .error-message {
+            background: #fee;
+            border: 2px solid #fcc;
+            border-radius: 15px;
+            padding: 20px;
+            color: #c33;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .error-icon {
+            font-size: 1.5rem;
+        }
+
+        .weather-info {
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .city-name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .weather-icon-display {
+            width: 120px;
+            height: 120px;
+            margin: 20px auto;
+        }
+
+        .temp {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #667eea;
+            margin: 15px 0;
+        }
+
+        .condition {
+            font-size: 1.3rem;
+            color: #666;
+            margin-bottom: 25px;
+            font-weight: 500;
+        }
+
+        .details {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .detail-label {
+            font-size: 0.9rem;
+            color: #999;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .loading {
+            color: #667eea;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="weather-container">
+        <div class="header">
+            <span class="weather-icon-header">🌤️</span>
+            <h1>Météo France</h1>
+        </div>
+
+        <div class="search-container">
+            <input type="text" id="city" placeholder="Paris" value="Paris">
+            <button onclick="getWeather()">
+                <span class="search-icon">🔍</span>
+                Rechercher
+            </button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function getWeather() {
+            const city = document.getElementById("city").value.trim();
+            const resultDiv = document.getElementById("result");
+            
+            if (!city) {
+                resultDiv.innerHTML = `
+                    <div class="error-message">
+                        <span class="error-icon">⚠️</span>
+                        Veuillez entrer une ville.
+                    </div>
+                `;
+                return;
+            }
+
+            resultDiv.innerHTML = '<p class="loading">Chargement...</p>';
+
+            try {
+                // Connexion à votre API backend
+                const response = await fetch(`/weather?city=${encodeURIComponent(city)}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    resultDiv.innerHTML = `
+                        <div class="error-message">
+                            <span class="error-icon">❌</span>
+                            ${data.error}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="weather-info">
+                            <div class="city-name">${data.ville}, ${data.pays}</div>
+                            <img src="${data.icone}" alt="icône météo" class="weather-icon-display">
+                            <div class="temp">${data.temperature}°C</div>
+                            <div class="condition">${data.condition}</div>
+                            <div class="details">
+                                <div class="detail-item">
+                                    <span class="detail-label">Vent</span>
+                                    <span class="detail-value">${data.vent_kph} km/h</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Humidité</span>
+                                    <span class="detail-value">${data.humidite}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error-message">
+                        <span class="error-icon">❌</span>
+                        Impossible de récupérer la météo.
+                    </div>
+                `;
+            }
+        }
+
+        // Charger Paris par défaut au chargement de la page
+        window.addEventListener('load', getWeather);
+    </script>
+</body>
+</html>
