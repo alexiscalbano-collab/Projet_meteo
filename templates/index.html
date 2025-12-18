@@ -28,7 +28,7 @@
             border-radius: 30px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             width: 100%;
-            max-width: 600px;
+            max-width: 900px;
             text-align: center;
         }
 
@@ -154,6 +154,12 @@
             margin-bottom: 20px;
         }
 
+        .current-weather {
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
         .weather-icon-display {
             width: 120px;
             height: 120px;
@@ -179,8 +185,6 @@
             justify-content: center;
             gap: 40px;
             margin-top: 20px;
-            padding-top: 20px;
-            border-top: 2px solid #f0f0f0;
         }
 
         .detail-item {
@@ -206,6 +210,89 @@
             color: #667eea;
             font-size: 1.1rem;
             font-weight: 600;
+        }
+
+        /* Prévisions hebdomadaires */
+        .forecast-section {
+            margin-top: 30px;
+        }
+
+        .forecast-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .forecast-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .forecast-day {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px 15px;
+            border-radius: 15px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+        }
+
+        .forecast-day:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .forecast-day-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .forecast-icon {
+            width: 60px;
+            height: 60px;
+            margin: 10px auto;
+        }
+
+        .forecast-temp {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin: 10px 0 5px;
+        }
+
+        .forecast-temp-min {
+            font-size: 0.9rem;
+            color: #999;
+        }
+
+        .forecast-condition {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .weather-container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .forecast-grid {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+                gap: 10px;
+            }
+
+            .details {
+                gap: 20px;
+            }
         }
     </style>
 </head>
@@ -245,37 +332,74 @@
             resultDiv.innerHTML = '<p class="loading">Chargement...</p>';
 
             try {
-                // Connexion à votre API backend
-                const response = await fetch(`/weather?city=${encodeURIComponent(city)}`);
-                const data = await response.json();
+                // Appel à l'API pour la météo actuelle
+                const currentResponse = await fetch(`/weather?city=${encodeURIComponent(city)}`);
+                const currentData = await currentResponse.json();
 
-                if (data.error) {
+                if (currentData.error) {
                     resultDiv.innerHTML = `
                         <div class="error-message">
                             <span class="error-icon">❌</span>
-                            ${data.error}
+                            ${currentData.error}
                         </div>
                     `;
-                } else {
-                    resultDiv.innerHTML = `
-                        <div class="weather-info">
-                            <div class="city-name">${data.ville}, ${data.pays}</div>
-                            <img src="${data.icone}" alt="icône météo" class="weather-icon-display">
-                            <div class="temp">${data.temperature}°C</div>
-                            <div class="condition">${data.condition}</div>
+                    return;
+                }
+
+                // Appel à l'API pour les prévisions hebdomadaires
+                const forecastResponse = await fetch(`/forecast?city=${encodeURIComponent(city)}`);
+                const forecastData = await forecastResponse.json();
+
+                // Afficher la météo actuelle
+                let html = `
+                    <div class="weather-info">
+                        <div class="current-weather">
+                            <div class="city-name">${currentData.ville}, ${currentData.pays}</div>
+                            <img src="${currentData.icone}" alt="icône météo" class="weather-icon-display">
+                            <div class="temp">${currentData.temperature}°C</div>
+                            <div class="condition">${currentData.condition}</div>
                             <div class="details">
                                 <div class="detail-item">
                                     <span class="detail-label">Vent</span>
-                                    <span class="detail-value">${data.vent_kph} km/h</span>
+                                    <span class="detail-value">${currentData.vent_kph} km/h</span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">Humidité</span>
-                                    <span class="detail-value">${data.humidite}%</span>
+                                    <span class="detail-value">${currentData.humidite}%</span>
                                 </div>
+                            </div>
+                        </div>
+                `;
+
+                // Afficher les prévisions si disponibles
+                if (forecastData && forecastData.previsions && forecastData.previsions.length > 0) {
+                    html += `
+                        <div class="forecast-section">
+                            <div class="forecast-title">📅 Prévisions sur 7 jours</div>
+                            <div class="forecast-grid">
+                    `;
+
+                    forecastData.previsions.forEach(day => {
+                        html += `
+                            <div class="forecast-day">
+                                <div class="forecast-day-name">${day.jour}</div>
+                                <img src="${day.icone}" alt="icône météo" class="forecast-icon">
+                                <div class="forecast-temp">${day.temp_max}°C</div>
+                                <div class="forecast-temp-min">${day.temp_min}°C</div>
+                                <div class="forecast-condition">${day.condition}</div>
+                            </div>
+                        `;
+                    });
+
+                    html += `
                             </div>
                         </div>
                     `;
                 }
+
+                html += `</div>`;
+                resultDiv.innerHTML = html;
+
             } catch (error) {
                 resultDiv.innerHTML = `
                     <div class="error-message">
